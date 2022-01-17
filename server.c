@@ -110,7 +110,6 @@ void send_message(char *s, char *cname){
 		if(clients[i]){
 			if(!strcmp(clients[i]->name,cname)){
 				if(write(clients[i]->sockfd, s, strlen(s)) < 0){
-					perror("ERROR: write to descriptor failed");
 					break;
 				}
 			}
@@ -321,11 +320,9 @@ void *handle_client(void *arg){
 					strcat(friend_filename,txt);
 					if(exists(friend_filename)==0){ //checking if profile exists
 						send_message("false", cli->name);
-						printf("xD1\n");
 					}
 					else{
 						send_message("truee",cli->name);
-						printf("xD2\n");
 						bzero(buff_out, BUFFER_SZ);
 						while(1){
 							if (leave_flag) {

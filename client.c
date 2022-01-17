@@ -51,7 +51,7 @@ void send_msg_handler() {
     if (strcmp(message, "exit") == 0) {
 			break;
     } else {
-		strcat(buffer,name);
+		strcat(buffer,friend);
 		strcat(buffer,": ");
 		strcat(buffer,message);
 		strcat(buffer,"\n");
