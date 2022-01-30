@@ -9,7 +9,7 @@ import java.util.List;
 public class Server extends Thread{
     private final int serverPort;
 
-    private ArrayList<ServerThread> threadList = new ArrayList<>();
+    private final ArrayList<ServerThread> threadList = new ArrayList<>();
 
     public Server(int port) {
         serverPort = port;
@@ -29,7 +29,7 @@ public class Server extends Thread{
             System.out.println("Server is listening on port " + serverPort);
 
             while (true) {
-                if(threadList.size()<3) {
+                if(threadList.size()<10) {
                     Socket socket = serverSocket.accept();
                     System.out.println("New client connected");
                     ServerThread serverThread = new ServerThread(this, socket);

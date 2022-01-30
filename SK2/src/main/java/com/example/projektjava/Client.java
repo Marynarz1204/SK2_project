@@ -4,16 +4,9 @@ import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.CycleMethod;
-import javafx.scene.paint.LinearGradient;
-import javafx.scene.paint.Stop;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -148,15 +141,21 @@ public class Client extends Application{
                 break;
             }
             friends.getItems().add(friend);
-            System.out.println("friend");
         }
         return friends;
     }
+    public void getLogs(TextArea textArea,String user){
+        sendMsg("getFile "+user);
+        String line;
+        while((line = reciveMsg())!=null){
+            if(line.equals(myUsername)){
+                break;
+            }
+            textArea.appendText(line+"\n");
+        }
+    }
 
     public void welcomeScene(){
-        window.setTitle("Chatu Chatu");
-        window.setOnCloseRequest(e -> closeProgram());
-
         Label label = new Label();
         label.setText("Witaj w Chatu Chatu!");
 
@@ -175,7 +174,6 @@ public class Client extends Application{
 
         Scene scene1 = new Scene(layout, 500, 500);
         window.setScene(scene1);
-        window.show();
     }
     public void signingScene(String version){
         GridPane grid = new GridPane();
@@ -308,15 +306,55 @@ public class Client extends Application{
 
         Button button1 = new Button("Go chat!");
         GridPane.setConstraints(button1, 0, 1);
-        button1.setOnAction(e -> System.out.println(choiceBox.getValue()));
+        button1.setOnAction(e -> chatScene(choiceBox.getValue()));
 
         Button button2 = new Button("Go Back");
         GridPane.setConstraints(button2, 1, 1);
         button2.setOnAction(e -> loggedInScene());
 
-
         grid.getChildren().addAll( button1, button2, choiceBox);
         grid.setAlignment(Pos.CENTER);
+
+        Scene scene = new Scene(grid, 500, 500);
+        window.setScene(scene);
+    }
+    public void chatScene(String user){
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(10,10,10,10));
+        grid.setHgap(10);
+        grid.setVgap(8);
+
+        Label nameLabel = new Label(user);
+        GridPane.setConstraints(nameLabel, 0, 0);
+        TextArea textArea = new TextArea();
+        textArea.setEditable(false);
+        textArea.setPrefSize(300,400);
+        GridPane.setConstraints(textArea,0,1);
+        getLogs(textArea, user);
+        TextField textField = new TextField();
+        GridPane.setConstraints(textField,0,2);
+
+        Button button1 = new Button("Send");
+        GridPane.setConstraints(button1, 1, 1);
+        button1.setOnAction(e -> {
+            sendMsg("send to " + textField.getText());
+            textArea.appendText(myUsername + ": " + textField.getText() + "\n");
+        });
+        sendMsg("onChatWith "+user);
+
+        ClientThread clientThread = new ClientThread(user,bufferedIn,textArea);
+        clientThread.start();
+
+        Button button2 = new Button("Go Back");
+        GridPane.setConstraints(button2, 2, 1);
+        button2.setOnAction(e -> {
+            sendMsg("exitChat");
+            clientThread.end=true;
+            loggedInScene();
+        });
+
+        grid.getChildren().addAll(nameLabel,textArea,button1,button2,textField);
+        grid.setAlignment(Pos.BASELINE_CENTER);
 
         Scene scene = new Scene(grid, 500, 500);
         window.setScene(scene);
@@ -348,12 +386,40 @@ public class Client extends Application{
         Scene scene = new Scene(layout, 500, 500);
         window.setScene(scene);
     }
+    public void startingScene(){
+        window.setTitle("Chatu Chatu");
+        window.setOnCloseRequest(e -> closeProgram());
+
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(10,10,10,10));
+        grid.setHgap(10);
+        grid.setVgap(8);
+
+        Label ipLabel = new Label("Server IP:");
+        GridPane.setConstraints(ipLabel, 0, 0);
+        TextField ipField = new TextField();
+        GridPane.setConstraints(ipField,1,0);
+
+        Button button1 = new Button("Connect");
+        GridPane.setConstraints(button1, 1, 2);
+        button1.setOnAction(e -> {
+            runClient(ipField.getText(), 5555);
+            welcomeScene();
+        });
+
+        grid.getChildren().addAll(ipLabel,ipField,button1);
+        grid.setAlignment(Pos.CENTER);
+
+        Scene scene = new Scene(grid, 500, 500);
+        window.setScene(scene);
+        window.show();
+    }
+
 
     @Override
     public void start(Stage stage){
-        runClient("127.0.0.1",5555);
         window=stage;
-        welcomeScene();
+        startingScene();
     }
 
 

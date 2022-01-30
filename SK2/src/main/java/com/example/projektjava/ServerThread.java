@@ -2,18 +2,15 @@ package com.example.projektjava;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class ServerThread extends Thread {
-    private Socket socket;
+    private final Socket socket;
     private String myUsername;
-    private Server server;
-    File f;
-    private OutputStream output;
+    private final Server server;
+    public String onChatWithUsername;
+    public PrintWriter writer;
+    public OutputStream output;
 
     public ServerThread(Server server, Socket socket) {
         this.server=server;
@@ -29,7 +26,32 @@ public class ServerThread extends Thread {
         writer.flush();
     }
 
+    public void saveToFile(String text, String file1, String file2){
+        int compare = file1.compareTo(file2);
+        String filename;
+        if(compare >= 0){
+            filename = file1 + "_" + file2;
+        }
+        else{
+            filename = file2 + "_" + file1;
+        }
+        File f = new File("logs\\" + filename + ".txt");
+        try {
+            if(f.createNewFile()){
+                BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+                bw.write(myUsername + ": " + text+"\n");
+                bw.close();
+            }
+            else{
+                BufferedWriter bw = new BufferedWriter(new FileWriter(f,true));
+                bw.write(myUsername + ": " + text+"\n");
+                bw.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+    }
 
     @Override
     public void run() {
@@ -38,7 +60,7 @@ public class ServerThread extends Thread {
             output = socket.getOutputStream();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-            PrintWriter writer = new PrintWriter(output, true);
+             writer = new PrintWriter(output, true);
 
             String line;
             while((line = reader.readLine())!=null){
@@ -146,16 +168,41 @@ public class ServerThread extends Thread {
                         }
                         sendMsg(writer,myUsername);
                         br.close();
+                    }
+                    else if("onChatWith".equalsIgnoreCase(cmd)){
+                        onChatWithUsername = tokens[1];
+                    }
+                    else if("exitChat".equalsIgnoreCase(cmd)){
+                        onChatWithUsername = null;
+                    }
+                    else if("send".equalsIgnoreCase(cmd)){
+                        saveToFile(tokens[2], myUsername, onChatWithUsername);
+                        for(int i = 0; i<server.getThreadList().size();i++){
+                            if(Objects.equals(onChatWithUsername, server.getThreadList().get(i).getMyUsername())){
+                                if(Objects.equals(server.getThreadList().get(i).onChatWithUsername, myUsername)){
+                                    sendMsg(server.getThreadList().get(i).writer, tokens[2]);
+                                }
+                            }
+                        }
+                    }else if("getFile".equalsIgnoreCase(cmd)){
+                        int compare = myUsername.compareTo(tokens[1]);
+                        String filename;
+                        if(compare >= 0){
+                            filename = myUsername + "_" + tokens[1];
+                        }
+                        else{
+                            filename = tokens[1] + "_" + myUsername;
+                        }
+                        String path = "logs\\" + filename + ".txt";
+                        File f = new File(path);
+                        BufferedReader br = new BufferedReader(new  FileReader(f));
+                        String lines;
+                        while((lines = br.readLine())!=null) {
+                            sendMsg(writer,lines);
+                        }
+                        sendMsg(writer,myUsername);
+                        br.close();
 
-                    }
-                    else if("send".equalsIgnoreCase(cmd)){
-                        //wyslij wiadomosc
-                    }
-                    else if("recive".equalsIgnoreCase(cmd)){
-                        //wyslij wiadomosc do klienta
-                    }
-                    else if("send".equalsIgnoreCase(cmd)){
-                        //wyslij wiadomosc do innego watku
                     } else{
                         String msg = "unknown " + cmd + "\n";
                         output.write(msg.getBytes());
