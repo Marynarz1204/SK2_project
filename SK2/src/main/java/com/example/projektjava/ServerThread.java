@@ -3,6 +3,7 @@ package com.example.projektjava;
 import java.io.*;
 import java.net.Socket;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ServerThread extends Thread {
     private final Socket socket;
@@ -11,10 +12,14 @@ public class ServerThread extends Thread {
     public String onChatWithUsername;
     public PrintWriter writer;
     public OutputStream output;
+    private final ReentrantLock mutexUsers;
+    private final ReentrantLock mutexLogs;
 
     public ServerThread(Server server, Socket socket) {
         this.server=server;
         this.socket=socket;
+        mutexUsers = server.mutexUsers;
+        mutexLogs = server.mutexLogs;
     }
 
     public String getMyUsername(){
@@ -36,6 +41,7 @@ public class ServerThread extends Thread {
             filename = file2 + "_" + file1;
         }
         File f = new File("logs\\" + filename + ".txt");
+        mutexLogs.lock();
         try {
             if(f.createNewFile()){
                 BufferedWriter bw = new BufferedWriter(new FileWriter(f));
@@ -50,7 +56,7 @@ public class ServerThread extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        mutexLogs.unlock();
     }
 
     @Override
@@ -72,9 +78,11 @@ public class ServerThread extends Thread {
                         break;
                     }
                     else if("log".equalsIgnoreCase(cmd)){
+
                         String path = "users\\" + tokens[1] + ".txt";
                         File f = new File(path);
                         if(f.exists()){
+                            mutexUsers.lock();
                             BufferedReader br = new BufferedReader(new  FileReader(f));
                             if(Objects.equals(br.readLine(), tokens[2])){
                                 sendMsg(writer, "pass");
@@ -83,18 +91,22 @@ public class ServerThread extends Thread {
                                 sendMsg(writer, "wrong");
                             }
                             br.close();
+                            mutexUsers.unlock();
                         }else{
                             sendMsg(writer, "dont exist");
                         }
+
                     }
                     else if("sign".equalsIgnoreCase(cmd)){
                         String path = "users\\" + tokens[1] + ".txt";
                         File f = new File(path);
                         if(f.createNewFile()){
+                            mutexUsers.lock();
                             BufferedWriter bw = new BufferedWriter(new FileWriter(f));
                             bw.write(tokens[2]+"\n");
                             bw.close();
                             sendMsg(writer, "pass");
+                            mutexUsers.unlock();
                         }else{
                             sendMsg(writer, "exist");
                         }
@@ -109,6 +121,7 @@ public class ServerThread extends Thread {
                             sendMsg(writer,"me");
                         }
                         else if(ff.exists()){
+                            mutexUsers.lock();
                             BufferedReader br = new BufferedReader(new  FileReader(f));
                             br.readLine();
                             String users;
@@ -127,6 +140,7 @@ public class ServerThread extends Thread {
                             }else{
                                 sendMsg(writer, "already a friend");
                             }
+                            mutexUsers.unlock();
                         }else{
                             sendMsg(writer,"dont exist");
                         }
@@ -134,6 +148,7 @@ public class ServerThread extends Thread {
                     else if("delete".equalsIgnoreCase(cmd)){
                         File inputFile = new File("users\\" + myUsername + ".txt");
                         File tempFile = new File("users\\" + "temp" + ".txt");
+                        mutexUsers.lock();
                         BufferedReader br = new BufferedReader(new FileReader(inputFile));
                         BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
                         boolean wasFlag = false;
@@ -155,10 +170,12 @@ public class ServerThread extends Thread {
                         bw.close();
                         inputFile.delete();
                         tempFile.renameTo(inputFile);
+                        mutexUsers.unlock();
                     }
                     else if("show".equalsIgnoreCase(cmd)){
                         String path = "users\\" + myUsername + ".txt";
                         File f = new File(path);
+                        mutexUsers.lock();
                         BufferedReader br = new BufferedReader(new  FileReader(f));
                         br.readLine();
                         String users;
@@ -168,6 +185,7 @@ public class ServerThread extends Thread {
                         }
                         sendMsg(writer,myUsername);
                         br.close();
+                        mutexUsers.unlock();
                     }
                     else if("onChatWith".equalsIgnoreCase(cmd)){
                         onChatWithUsername = tokens[1];
@@ -184,7 +202,8 @@ public class ServerThread extends Thread {
                                 }
                             }
                         }
-                    }else if("getFile".equalsIgnoreCase(cmd)){
+                    }
+                    else if("getFile".equalsIgnoreCase(cmd)){
                         int compare = myUsername.compareTo(tokens[1]);
                         String filename;
                         if(compare >= 0){
@@ -195,6 +214,8 @@ public class ServerThread extends Thread {
                         }
                         String path = "logs\\" + filename + ".txt";
                         File f = new File(path);
+                        mutexLogs.lock();
+                        f.createNewFile();
                         BufferedReader br = new BufferedReader(new  FileReader(f));
                         String lines;
                         while((lines = br.readLine())!=null) {
@@ -202,8 +223,9 @@ public class ServerThread extends Thread {
                         }
                         sendMsg(writer,myUsername);
                         br.close();
-
-                    } else{
+                        mutexLogs.unlock();
+                    }
+                    else{
                         String msg = "unknown " + cmd + "\n";
                         output.write(msg.getBytes());
                     }

@@ -21,6 +21,7 @@ public class Client extends Application{
     Socket socket;
     private String myUsername;
     private BufferedReader bufferedIn;
+    private String IP;
 
     public void sendMsg(String text){
         try {
@@ -88,7 +89,8 @@ public class Client extends Application{
         if(passedSigning){
             myUsername = username;
             sendMsg("quit");
-            start(window);
+            runClient(IP,5555);
+            welcomeScene();
         }
     }
     private void addFriend(String username) {
@@ -374,7 +376,7 @@ public class Client extends Application{
         button3.setOnAction(e -> deletingScene(""));
 
         Button button4 = new Button("Log out");
-        button4.setOnAction(e -> {sendMsg("quit");start(window);});
+        button4.setOnAction(e -> {sendMsg("quit");runClient(IP, 5555);welcomeScene();});
 
         Button buttonExit = new Button("Exit");
         buttonExit.setOnAction(e -> closeProgram());
@@ -403,7 +405,7 @@ public class Client extends Application{
         Button button1 = new Button("Connect");
         GridPane.setConstraints(button1, 1, 2);
         button1.setOnAction(e -> {
-            runClient(ipField.getText(), 5555);
+            runClient(IP = ipField.getText(), 5555);
             welcomeScene();
         });
 

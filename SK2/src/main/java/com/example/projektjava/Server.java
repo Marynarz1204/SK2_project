@@ -5,9 +5,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Server extends Thread{
     private final int serverPort;
+    public ReentrantLock mutexUsers = new ReentrantLock();
+    public ReentrantLock mutexLogs = new ReentrantLock();
 
     private final ArrayList<ServerThread> threadList = new ArrayList<>();
 
